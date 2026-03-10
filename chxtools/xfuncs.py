@@ -214,7 +214,7 @@ def get_Bragg(reflection,E=8.):
             for l in range(0,np.size(theta)):
                 ds.append(dspace[ind])
                 I.append(Irel[ind])
-            res=np.array([theta,np.array(ds),np.array(I)])
+            res=np.array([np.array([theta]),np.array(ds),np.array(I)])[0]
             return res.T
         elif reflection=='reflections?':
             print ('List of available reflections (T=25C):')
