@@ -19,6 +19,8 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     author='Brookhaven National Laboratory',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     packages=find_packages(),
     package_data={'chxtools': ['X-ray_database/*.dat']},
     include_package_data=True,
