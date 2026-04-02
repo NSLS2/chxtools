@@ -10,7 +10,7 @@ by LW 03/13/2016
 import numpy as np
 from chxtools import xfuncs as xf
 from scipy.optimize import fminbound
-from epics import *
+from epics import caget
 
 
 def CRL_focalpoint(energy, lens_configuration):
@@ -95,24 +95,24 @@ def calc_transsetup(image_pos, E="auto", silent=False):
     impos_diff = np.zeros(2 ** len(lens_R))
     q = np.zeros(2 ** len(lens_R))
     real_im = np.zeros(2 ** len(lens_R))
-    for l in range(0, 2 ** len(lens_R)):
-        k = f.format(l)
+    for idx in range(0, 2 ** len(lens_R)):
+        k = f.format(idx)
         a = np.zeros(len(lens_R))
         for h in range(0, len(lens_R)):
             a[h] = int(k[h])
         ln = lens_N * a
-        F[l] = 1 / np.sum(2 * delta * ln / (lens_R * 1e-3))
+        F[idx] = 1 / np.sum(2 * delta * ln / (lens_R * 1e-3))
 
-        # print F[l]
+        # print F[idx]
         def image_func(x):
-            return abs(x - image_pos + 1 / (-1 / x + 1 / F[l]))
+            return abs(x - image_pos + 1 / (-1 / x + 1 / F[idx]))
 
-        zmin[l] = fminbound(image_func, zpos[0], zpos[1])
-        q[l] = 1 / (-1 / zmin[l] + 1 / F[l])
-        if q[l] < 0:
-            real_im[l] = 0
-            q[l] = float("NaN")
-        impos_diff[l] = q[l] + zmin[l] - image_pos
+        zmin[idx] = fminbound(image_func, zpos[0], zpos[1])
+        q[idx] = 1 / (-1 / zmin[idx] + 1 / F[idx])
+        if q[idx] < 0:
+            real_im[idx] = 0
+            q[idx] = float("NaN")
+        impos_diff[idx] = q[idx] + zmin[idx] - image_pos
 
     # looking for the best option
     index = np.nanargmin(abs(impos_diff))
@@ -131,7 +131,7 @@ def calc_transsetup(image_pos, E="auto", silent=False):
     # conf_lens_mat=lens_mat*bin_index
     conf_lensR = lens_R * bin_index
     conf_lensN = lens_N * bin_index
-    if silent == False:
+    if not silent:
         print(" ")
         print("optimized transfocator settings for E=" + str(E) + " [eV]")
         print(

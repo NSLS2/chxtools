@@ -5,6 +5,7 @@ some wrapper functions for ophyd
 """
 
 from __future__ import print_function
+from pyepics import caget, caput
 
 
 def det_select(det):
@@ -18,16 +19,16 @@ def det_select(det):
     calling sequence: det_select(det)
     """
     try:
-        rm_det = ascan.user_detectors[0].name
-        ascan.user_detectors.remove(session_mgr[rm_det])
-        ascan.default_triggers = []
-        ascan.default_detectors = []
+        rm_det = ascan.user_detectors[0].name  # noqa: F821
+        ascan.user_detectors.remove(session_mgr[rm_det])  # noqa: F821
+        ascan.default_triggers = []  # noqa: F821
+        ascan.default_detectors = []  # noqa: F821
         print("removed previous default detector: {}".format(rm_det))
-    except:
+    except Exception:
         print("list of detectors appeared to be empty...")
 
-    ascan.user_detectors.append(det)  # add detector
-    new_def_det = ascan.user_detectors[0].name
+    ascan.user_detectors.append(det)  # noqa: F821
+    new_def_det = ascan.user_detectors[0].name  # noqa: F821
 
     print("\nnew default detector: {}".format(new_def_det))
 
@@ -47,19 +48,19 @@ def cw_ascan(mot, xmin, xmax, npoints, acqt="default", pos_ret=True):
     # gather beamline information prior to starting the scan:
     ini_motpos = caget(mot.record + ".RBV")
     # current detector:
-    acq_pv = session_mgr[ascan.user_detectors[0].name].pvname
+    acq_pv = session_mgr[ascan.user_detectors[0].name].pvname  # noqa: F821
 
     # set different exposure time for the scan, if requested:
     if acqt != "default":
         try:
             ini_expt = caget(acq_pv[2])  # initial exposure time
-            session_mgr[ascan.user_detectors[0].name].acquire_time = acqt
+            session_mgr[ascan.user_detectors[0].name].acquire_time = acqt  # noqa: F821
             print("successfully set exposure time to [s]: {}".format(acqt))
-        except:
+        except Exception:
             print("could not set exposure time to {}".format(acqt))
 
     # execute the scan
-    ascan(mot, xmin, xmax, npoints)
+    ascan(mot, xmin, xmax, npoints)  # noqa: F821
 
     # put beamline back into initial state
     if pos_ret:
@@ -67,9 +68,9 @@ def cw_ascan(mot, xmin, xmax, npoints, acqt="default", pos_ret=True):
         print("returned axes to: {}".format(ini_motpos))
     if acqt != "default":
         try:
-            session_mgr[ascan.user_detectors[0].name].acquire_time = ini_expt
+            session_mgr[ascan.user_detectors[0].name].acquire_time = ini_expt  # noqa: F821
             print("successfully reset exposure time to [s]: {}".format(ini_expt))
-        except:
+        except Exception:
             print("could not reset exposure time to {}".format(ini_expt))
 
 
@@ -83,26 +84,26 @@ def cw_dscan(mot, mdx, pdx, npoints, acqt="default", pos_ret=True):
     WILL NOT WORK FOR A LIST OF DETECTORS!
     """
     # current detector:
-    acq_pv = session_mgr[ascan.user_detectors[0].name].pvname
+    acq_pv = session_mgr[ascan.user_detectors[0].name].pvname  # noqa: F821
 
     # set different exposure time for the scan, if requested:
     if acqt != "default":
         try:
             ini_expt = caget(acq_pv[2])  # initial exposure time
-            session_mgr[ascan.user_detectors[0].name].acquire_time = acqt
+            session_mgr[ascan.user_detectors[0].name].acquire_time = acqt  # noqa: F821
             print("successfully set exposure time to [s]: {}".format(acqt))
-        except:
+        except Exception:
             print("could not set exposure time to {}".format(acqt))
 
     # execute the scan
-    dscan(mot, mdx, pdx, npoints)
+    dscan(mot, mdx, pdx, npoints)  # noqa: F821
     # print('finished scan')
 
     if acqt != "default":
         try:
-            session_mgr[ascan.user_detectors[0].name].acquire_time = ini_expt
+            session_mgr[ascan.user_detectors[0].name].acquire_time = ini_expt  # noqa: F821
             print("successfully reset exposure time to [s]: {}".format(ini_expt))
-        except:
+        except Exception:
             print("could not reset exposure time to {}".format(ini_expt))
 
 
@@ -171,7 +172,7 @@ def cw_CCDseries(
     caput(detector.pvname.split("}")[0] + "}TIFF1:FileNumber", startn)
 
     # gather information about current camera settings
-    acq_pv = session_mgr[ascan.user_detectors[0].name].pvname
+    acq_pv = session_mgr[ascan.user_detectors[0].name].pvname  # noqa: F821
     ini_acq = caget(
         acq_pv.split("}")[0] + "}cam1:Acquire"
     )  # initial state: started or stopped
@@ -190,25 +191,25 @@ def cw_CCDseries(
         try:
             caput(acq_pv.split("}")[0] + "}cam1:AcquireTime", acqt)
             print("successfully set exposure time to [s]: {}".format(acqt))
-        except:
+        except Exception:
             print("could not set exposure time to {}".format(acqt))
     # stop camara:
     try:
         caput(acq_pv.split("}")[0] + "}cam1:Acquire", 0)
         print("successfully stopped camera")
-    except:
+    except Exception:
         print("could not stop camera")
     # try to set image mode to multiple
     try:
         caput(acq_pv.split("}")[0] + "}cam1:ImageMode", 1)
         print('successfully set ImageMode to "multiple"')
-    except:
+    except Exception:
         print('could not set ImageMode to "multiple"')
     if acqperiod != "default":
         try:
             caput(acq_pv.split("}")[0] + "}cam1:AcquirePeriod", acqperiod)
             print("successfully set acquiering period to: {}".format(acqperiod))
-        except:
+        except Exception:
             print("could not set aquireing period to {}".format(acqperiod))
 
     # set number of images to be taken:
@@ -216,7 +217,7 @@ def cw_CCDseries(
         try:
             caput(acq_pv.split("}")[0] + "}cam1:NumImages", imnum)
             print("successfully set number of images to: {}".format(imnum))
-        except:
+        except Exception:
             print("could not set number of images to {}".format(imnum))
     print("going to start the acquisition...")
     time.sleep(1)
@@ -264,17 +265,17 @@ def cw_CCDseries(
         try:
             caput(acq_pv.split("}")[0] + "}cam1:AcquireTime", ini_expt)
             print("successfully reset exposure time to [s]: {}".format(ini_expt))
-        except:
+        except Exception:
             print("could not reset exposure time to {}".format(ini_expt))
     try:
         caput(acq_pv.split("}")[0] + "}cam1:ImageMode", ini_mode)
         print("successfully reset ImageMode")
-    except:
+    except Exception:
         print("could not reset ImageMode")
     try:
         caput(acq_pv.split("}")[0] + "}cam1:Acquire", ini_acq)
         print("successfully reset camera acquisition mode")
-    except:
+    except Exception:
         print("could not reset camera acquisition mode")
     if acqperiod != "default":
         try:
@@ -282,13 +283,13 @@ def cw_CCDseries(
             print(
                 "successfully reset acquisition period to [s]: {}".format(ini_acqperiod)
             )
-        except:
+        except Exception:
             print("could not reset acquisition period  to {}".format(ini_acqperiod))
     if imnum != "default":
         try:
             caput(acq_pv.split("}")[0] + "}cam1:NumImages", ini_imnum)
             print("successfully reset image numbers to: {}".format(ini_imnum))
-        except:
+        except Exception:
             print("could not reset image numbers to {}".format(ini_imnum))
     time.sleep(0.5)
     try:
@@ -296,5 +297,5 @@ def cw_CCDseries(
             acq_pv.split("}")[0] + "}cam1:Acquire", ini_acq
         )  # restart camera if it was running before taking the series
         print("restarted camera")
-    except:
+    except Exception:
         print("could not restart camera...")

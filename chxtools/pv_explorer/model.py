@@ -1,4 +1,4 @@
-from atom.api import *
+from atom.api import observe, Atom, Str, Typed, Dict, Bool, Float
 from matplotlib.figure import Figure
 import numpy as np
 import datetime

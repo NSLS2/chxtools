@@ -9,6 +9,7 @@ v 0.0.1 (this version): might have created a typo in E-calibration!!!
 
 from pathlib import Path
 from pkg_resources import resource_filename as rs_fn
+from numpy import mean
 
 
 ############
@@ -193,7 +194,7 @@ def dcm_roll(Bragg, offset, distance, offmode="mm", pixsize=5.0):
     else:
         try:
             d = float(distance)
-        except:
+        except Exception:
             raise CHX_utilities_Exception(
                 "Error: distance must be a recognized string or numerical value"
             )
@@ -262,34 +263,23 @@ def sum_image(filename, firstim=0, lastim=9999):
         # lastim=30     # maximum number of images to search in automatic mode
 
     imcount = firstim
-    # print 'imcount: ',imcount
-    # print 'firstim: ',firstim
     get_out = 0
     image_data = 0
     while imcount <= lastim:
         ic = str(imcount)
         while len(ic) < nlen:  # create file number
             ic = "0" + ic
-            # ic=str(ic)
-            # print ic
-        # assemble the image name to be loaded:
         file_to_open = fp + fn + "_" + ic + "." + fe
 
         try:
             im = Image.open(file_to_open)
-            # im.show()
             print("loaded file: ", file_to_open)
-        except:
+        except Exception:
             print("waiting for file: " + file_to_open)
-            # plt.close(1)    # use the waiting time to plot some intermediate result -> does not work, as python is waiting until the end before printing....
-            # plt.figure(1)
-            # imgplot= plt.imshow(image_data/(imcount-firstim+1),origin='lower')
-            # imgplot.set_cmap('gray')
             time.sleep(5)
             try:
                 im = Image.open(file_to_open)
-                # im.show()
-            except:
+            except Exception:
                 get_out = 1
         if get_out == 1:
             return image_data
@@ -308,19 +298,14 @@ def sum_image(filename, firstim=0, lastim=9999):
             imgplot.set_cmap("gray")
         else:
             image_data = image_data + np.array(np.sum(im, axis=2))
-        # plt.close(1)
-        # plt.figure(1)
-        # plt.imshow(image_data/((imcount-firstim)+1))
         imcount = imcount + 1
     plt.close(
         1
     )  # only plot at the end for now: too much overhead to plot every iteration
     plt.figure(1)
-    # finalimage=Image.fromarray(image_data/(imcount-firstim+1))
     imgplot = plt.imshow(image_data / (imcount - firstim + 1), origin="lower")
     imgplot.set_cmap("gray")
     plt.title("summed :" + fp + fn + fnum + "-" + ic)
-    # finalimage.show()
     return image_data / (imcount - firstim + 1)
 
 
@@ -389,7 +374,6 @@ def get_cuts(img, cut=1000, direction="horz"):
 
 
 def show_cut(img, cut=1000, direction="horz", width=10, title=None):
-    # fig,ax=plt.subplots()
     img_ = img.copy()
 
     if direction == "horz":
@@ -445,9 +429,6 @@ def show_img(
     shape = img.shape
     dy, dx = shape
 
-    # ax.set_xlim( 0,dx)
-    # ax.set_ylim(0,dy)
-
     if xlim is not None:
         ax.set_xlim(xlim)
     if extent is not None:
@@ -455,12 +436,10 @@ def show_img(
         if ylim is None:
             ylim = [y2, y1]
         aspect_ = determine_aspect(shape, extent)
-        # rsx,rsy = [ (x2-x1)/float(dx), (y2-y1)/float(dy)] #rescale x, and rescale y
     else:
         aspect_ = None
     if ylim is None:
         ylim = [0, dy]
-    # print ylim
     ax.set_ylim([ylim[0], ylim[1]])
     if not logs:
         cax = ax.imshow(
@@ -509,9 +488,6 @@ def show_img(
     if ax is None:
         cbar = fig.colorbar(cax, ticks=[vmin, vmax])
 
-    # if ylim is not None:ax.set_ylim(ylim)
-    # if xlim is not None:ax.set_xlim(xlim)
-
     if save:
         if outDir != None:
             fp = outDir + title + "_.png"
@@ -523,7 +499,6 @@ def show_img(
 
 
 def trans_data_to_pd(data, label=None, dtype="list"):
-    # lists a [ list1, list2...] all the list have the same length
     from numpy import arange, array
     import pandas as pd
 
@@ -577,7 +552,6 @@ def plot_pv_values(
 
     import pandas.tools.plotting as ptg
 
-    # from numpy import arange,array
     import numpy as np
 
     if keys is None:
@@ -598,9 +572,7 @@ def plot_pv_values(
         N_data = N_img + 1
 
     sharex = True
-    # fig, axs = plt.subplots(N,sharex = True)
     fig, axs = ptg._subplots(N, sharex=sharex, sharey=False, layout=[N, 1])
-    # tf=time
     axs[0].set_xlim(np.min(time), np.max(time))
     for n in range(N0, N):
         i = n - N0
@@ -611,8 +583,6 @@ def plot_pv_values(
             width = min([ymax - ymean, ymean - ymin])
             ymax_ = ymean + width
             ymin_ = ymean - width
-            # print ymean, ymax_, ymin_
-            # ylim=[ ymin_ - ymean*.2, ymax_ + ymean*.2]
             ylim = [ymean - width * 5, ymean + width * 5]
         else:
             ylim = ylim_tv[i]
@@ -637,8 +607,6 @@ def plot_pv_values(
             for x in m:
                 x.set_visible(False)
 
-    # dd =np.array( [datetime.datetime.fromtimestamp( tf[i] )
-    # for i in range( 0, len(tf)  )] )
     if img is not None:
         dy, dx = img.shape
         shape = img.shape
@@ -655,7 +623,6 @@ def plot_pv_values(
         m = axs[N_img].get_xticklabels()
         for x in m:
             x.set_visible(False)
-        # axs[N_img].set_xlim( np.min(time), np.max(time) )
         axs[N_img].set_ylabel("size, um", fontsize=24)
 
     if data is not None:
@@ -681,15 +648,12 @@ def plot_pv_values(
 
     axs[n].set_xlim(np.min(time), np.max(time))
 
-    # print trans_tf_to_td( [np.min(time), np.max(time) ])
     xt = axs[n].get_xticks()
     xticks = trans_tf_to_td(xt)
     axs[n].set_xlabel(xlabel, fontsize=24)
     axs[n].set_xticklabels([x.strftime("%m-%d %H:%M") for x in xticks], fontsize=24)
 
     axs[n].set_ylabel(ki, fontsize=24)
-
-    # axs[0].set_xlim( np.min(time), np.max(time) )
 
 
 def make_wave_data2(x, y):
@@ -755,8 +719,6 @@ def get_archive_pvlist_values(
         "http://ca.cs.nsls2.local:8888/cgi-bin/ArchiveDataServer.cgi"
     )
 
-    # archiver.scan_archives()
-
     dict_tv = {}
     N = len(PVs)
     for i in range(N):
@@ -807,8 +769,7 @@ def get_archive_pv_value(
         archiver = [
             Archiver("http://xf11id-ca.cs.nsls2.local/cgi-bin/ArchiveDataServer.cgi")
         ]
-        # if scan_archives:
-    # archiver.scan_archives()
+
     if label[:3] == "Acc":
         arch = archiver[1]
     else:
@@ -852,27 +813,15 @@ def read_scan(sid, fill=True):
     muxer = dm.from_events(ev)
     data = muxer.to_sparse_dataframe()
     dt = data.time
-    # print dt
-    # print dt[0]
-    # print dt[len(dt)-1]
-    # data = list( db.fetch_events(hdr))
 
     t1 = datetime.datetime.fromtimestamp(dt[0]).strftime("%Y-%m-%d %H:%M:%S")
     t2 = datetime.datetime.fromtimestamp(dt[len(dt) - 1]).strftime("%Y-%m-%d %H:%M:%S")
-
-    # t1 = dt[0].strftime('%Y-%m-%d %H:%M:%S')
-    # t2 = dt[len(dt)-1].strftime('%Y-%m-%d %H:%M:%S')
 
     print("the first scan time is:   %s" % t1)
     print("the last scan time  is:   %s" % t2)
     start_time = t1
     end_time = t2
     return data, start_time, end_time
-
-
-# w,t = get_waterfall( data,direction='vert', cuts=[1000],firstim=0, lastim=1200,detector="xray_cam_img_image_lightfield",)
-
-# show_img(w[1000].T,aspect=1.2, ylim=[700,1400])
 
 
 def get_waterfall(
@@ -887,17 +836,13 @@ def get_waterfall(
     import numpy as np
 
     imcount = firstim
-    # im_time=[]
     waterfall = {}
     notime = lastim + 1 - firstim
     in_time = data.time
     imgs = data[detector]
     for n in range(0, notime):
         t = firstim + n
-        # im_time.append( data[t].time )
         dat = imgs[n]
-        # print t, data[t].time
-        # dat = data[t].data[detector]
         for i in cuts:
             if t == 0:
                 waterfall[i] = []
@@ -923,17 +868,11 @@ def get_img_waterfall(
     import numpy as np
 
     imcount = firstim
-    # im_time=[]
     waterfall = {}
     notime = lastim + 1 - firstim
-    # in_time = data.time
-    # imgs = data[detector]
     for n in range(0, notime):
         t = firstim + n
-        # im_time.append( data[t].time )
         dat = imgs[n]
-        # print t, data[t].time
-        # dat = data[t].data[detector]
         for i in cuts:
             if t == 0:
                 waterfall[i] = []
@@ -1030,7 +969,7 @@ def line_focus(
                 # im.show()
                 # im.show()
                 print("loaded file: ", file_to_open)
-            except:
+            except Exception:
                 print("waiting for file: " + file_to_open)
                 # plt.close(1)    # use the waiting time to plot some intermediate result -> does not work, as python is waiting until the end before printing....
                 # plt.figure(1)
@@ -1044,7 +983,7 @@ def line_focus(
                     )
                     im_time.append(time.ctime(mtime))
                     # im.show()
-                except:
+                except Exception:
                     get_out = 1
             if get_out == 1:
                 return image_data  ### THIS NEEDS TO BE CHANGED!!!
@@ -1057,12 +996,9 @@ def line_focus(
                 )
             # do the analysis
             im = np.array(im) * 1.0
-            # print 'shape of image: ',im.shape
-            # plt.figure(1)
-            # plt.imshow(im)
             try:
                 dat = np.sum(im, axis=2)  # sum RGB channels for a color image
-            except:
+            except Exception:
                 dat = im
             for i in cuts:
                 if direction == "horz":
@@ -1084,7 +1020,7 @@ def line_focus(
                     coeff, var_matrix = curve_fit(
                         gauss, np.array(xrange(len(cdat))), cdat, p0=p0
                     )
-                except:
+                except Exception:
                     coeff = [0, 0, 0, 0]
                 baseline.append(coeff[0])
                 amp.append(coeff[1])
@@ -1103,7 +1039,6 @@ def line_focus(
 
         for n in range(0, notime):
             t = firstim + n
-            # im_time.append( data[t].time )
             im = imgs[t]
 
             try:
@@ -1149,7 +1084,6 @@ def line_focus(
 
         for n in range(0, notime):
             t = firstim + n
-            # im_time.append( data[t].time )
             im = imgs[:, t]
             try:
                 dat = np.sum(im, axis=2)  # sum RGB channels for a color image
@@ -1177,8 +1111,6 @@ def line_focus(
                 center.append(coeff[2])
                 width.append(coeff[3])
 
-    # df_cen = trans_data_to_pd([center],label=['center'],dtype='list')
-
     return (
         np.array(baseline),
         np.array(amp),
@@ -1195,7 +1127,6 @@ def show_fit(data, para, func=gauss, title=None, ax=None):
     x, y = data
     x = np.array(x)
     y = np.array(y)
-    # print 'here'
     x0 = np.linspace(x.min(), x.max(), 2000)
     fit = func(x0, *para)
     if ax is None:
@@ -1204,7 +1135,6 @@ def show_fit(data, para, func=gauss, title=None, ax=None):
         ax.set_title(title)
     ax.plot(x, y, "bo")
     ax.plot(x0, fit, "r", ls="-")
-    # plt.show()
 
 
 def show_focus_line_fit(waterfall, para, lists=None, title=None):
@@ -1213,16 +1143,11 @@ def show_focus_line_fit(waterfall, para, lists=None, title=None):
     L, t = waterfall.shape
     if lists is None:
         lists = []
-        # lists.append( [t/4,t/2,3*t/4])
         lists.append([t / 5, 2 * t / 5, 3 * t / 5, 4 * t / 5])
-    # print lists
     fig, ax = plt.subplots(len(lists[0]))
-    # if title is not None:plt.title( title )
-    # print title
     for i, l in enumerate(lists[0]):
         im = waterfall[:, l]
         p = para[i : i + 1].values[0]
-        # print i,l
         show_fit([range(L), im], p, ax=ax[i], title=title + "_time@_%s" % l)
 
 
@@ -1255,24 +1180,15 @@ def get_fft(t, y):
     dx = (t[L - 1] - t[0]) / float(L)
     tm = 2 * L * dx
     xs = 1 / tm
-    # print ts,xs, tm
-    # fx = xs * np.arange( L  )
 
     y = np.concatenate((y, np.zeros(L)))
 
     FFT = abs(scipy.fft(y))[:L]
     freqs = scipy.fftpack.fftfreq(y.size, dx)[:L]  #
-    # FFT    = np.fft.fft(y)
-    # freqs = np.fft.fftfreq(len(y), dx )##
-    # Find the peak in the coefficients
     idx = np.argmax(np.abs(FFT))
     freq = freqs[idx]
     freq_in_hertz = abs(freq)  # * dx)
     print("The maximum frequency is:  %s" % (freq_in_hertz))  ##
-    # freqs = trans_data_to_pd([freqs], label=['freqs'],dtype='list')##
-    # 20*scipy.log10(FFT)
-    # FFT = trans_data_to_pd([  20*scipy.log10(FFT)  ], label=label,dtype='list')
-    # FFT = trans_data_to_pd([  (FFT)  ], label=label,dtype='list')##
     return np.array(freqs), np.array(FFT)
 
 
@@ -1312,7 +1228,6 @@ def plot_line_focus2(
     fig2, axs2 = ptg._subplots(2, sharex=True, sharey=True, layout=[2, 1])
 
     yc = df_res_.center
-    # _df_res_ = df_res
     df_res_["cen_pos"] = pix * (yc - yc.mean())
     df_res_.plot(
         x=td,
@@ -1333,12 +1248,9 @@ def plot_line_focus2(
     yfitted = y - polfit
 
     df_res_["cen_fitted"] = (yfitted - np.mean(yfitted)) * pix
-    # print dd.shape,df_res.cen_fitted.shape
     i = 0
     mean = (polfit - np.mean(polfit)) * pix
     std = mean.std()
-    # label=str(str(cuts[i]) +' PV: '+str(round(max(polfit)-min(polfit),2))+ 'um   rms: +/-'+str(  round(std0,2))+'um' )
-
     label = str(
         str(cuts[i])
         + " Center: "
@@ -1366,8 +1278,6 @@ def plot_line_focus2(
         ax=axs2[0],
         label=label,
     )
-
-    # label=str( str(cuts[i]) +' PV: '+ str(round(max(yfitted)-min(yfitted),2)) +  'um   rms: +/-'+str(round(( (yfitted-np.mean(yfitted))*pix ).std(),2))+'um'  )
 
     mean = (yfitted - np.mean(yfitted)) * pix
     std = mean.std()
@@ -1668,7 +1578,7 @@ def knife_edge(filename, direction="horz", cuts=[1, 2, 3], firstim=0, lastim=1, 
         try:
             im = Image.open(file_to_open)
             print("loaded file: ", file_to_open)
-        except:
+        except Exception:
             print("waiting for file: " + file_to_open)
             # plt.close(1)    # use the waiting time to plot some intermediate result -> does not work, as python is waiting until the end before printing....
             # plt.figure(1)
@@ -1678,7 +1588,7 @@ def knife_edge(filename, direction="horz", cuts=[1, 2, 3], firstim=0, lastim=1, 
             try:
                 im = Image.open(file_to_open)
                 # im.show()
-            except:
+            except Exception:
                 get_out = 1
         if get_out == 1:
             return image_data  ### THIS NEEDS TO BE CHANGED!!!
@@ -1692,7 +1602,7 @@ def knife_edge(filename, direction="horz", cuts=[1, 2, 3], firstim=0, lastim=1, 
         im = np.array(im) * 1.0
         try:
             dat = np.sum(im, axis=2)  # sum RGB channels for a color image
-        except:
+        except Exception:
             dat = im
     if imcount == firstim:
         plt.close(4)
@@ -1839,7 +1749,7 @@ def get_ID_calibration(
             outFile.write("% K column is a placeholder! \n")
             outFile.write("% ID gap [mm]     K      E_1 [keV] \n")
             print("successfully created output file: {}".format(dat_file))
-    except:
+    except Exception:
         raise CHX_utilities_Exception("error: could not create output file")
 
     ### do the scanning and data fitting, file writing,....
@@ -1872,10 +1782,6 @@ def get_ID_calibration(
     else:
         pass
     print("moving DCM Bragg angle to: ", B_guess, " deg and ID gap to ", i, " mm")
-    # dcm.b.timeout=1200	#make sure dcm motions don't timeout...
-    # dcm.en.timeout=1200
-    # mov(dcm.b,B_guess)
-    # mov(ivu_gap,i)
     print("hurray, made it up to here!")
     #  ascan(dcm.b,float(B_guess-.4),float(B_guess+.4),60)   # do the Bragg scan
     header = db[
@@ -1886,10 +1792,12 @@ def get_ID_calibration(
     intdat = data.xray_eye1_stats1_total[2:]
     B = np.array(B)
     intdat = np.array(intdat)
-    B = np.array(ss[-1].dcm_b)[
+    B = np.array(
+        ss[-1].dcm_b
+    )[  # noqa: F821
         2:
     ]  # retrieve the data (first data point is often "wrong", so don't use
-    intdat = np.array(ss[-1].bpm_cam_stats_total1)[2:]
+    intdat = np.array(ss[-1].bpm_cam_stats_total1)[2:]  # noqa: F821
     A = np.max(intdat)  # initial parameter guess and fitting
     xc = B[np.argmax(intdat)]
     w = 0.2
@@ -1917,7 +1825,7 @@ def get_ID_calibration(
             "     ",
             str(float(xf.get_EBragg(xtal, -coeff[2]) / 5.0)),
         )
-    except:
+    except Exception:
         print(
             "could not evaluate data point for ID gap = ",
             i,
