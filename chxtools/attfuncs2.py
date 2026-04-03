@@ -5,17 +5,15 @@ Created on Mon Sep 25 15:05:26 2017
 @author: lwiegart
 """
 
-"""
-Functions for CHX attenuators in monitor chamber:
-physical setup of attenuator system -> att_setup
-calculate optimal transmission -> calc_T
-set optimal transmission -> set_T
-by LW 09/25/2017
-_v2 (this version): added W-edge as T=0 [02/07/2018]
-"""
+# Functions for CHX attenuators in monitor chamber:
+# physical setup of attenuator system -> att_setup
+# calculate optimal transmission -> calc_T
+# set optimal transmission -> set_T
+# by LW 09/25/2017
+# _v2 (this version): added W-edge as T=0 [02/07/2018]
 import numpy as np
 from chxtools import xfuncs as xf
-from epics import *
+from epics import caget, caput
 
 
 def att_setup():

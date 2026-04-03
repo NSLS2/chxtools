@@ -47,11 +47,11 @@ def get_fft(t, y):
     import numpy as np
 
     L = len(t)
-    tp = np.array(t, dtype=float)
+    # tp = np.array(t, dtype=float)
     yp = np.array(y, dtype=float)
     ts = (t[L - 1] - t[0]) / float(L)
-    tm = 2 * L * ts
-    xs = 1 / tm
+    # tm = 2 * L * ts
+    # xs = 1 / tm
     ps = np.abs(np.fft.fft(yp))
     time_step = ts
     freqs = np.fft.fftfreq(yp.size, time_step)
@@ -284,7 +284,7 @@ def bpm_read(
     else:
         filename = filename + "_" + times
 
-    colms = ["A", "B", "C", "D", "X", "Y", "Sum"]
+    # colms = ["A", "B", "C", "D", "X", "Y", "Sum"]
 
     num_sample *= rate
     metadata = {}
@@ -305,7 +305,7 @@ def bpm_read(
             if n == 0:
                 try:
                     zero_point = np.where(d == 0)[0][0]
-                except:
+                except Exception:
                     zero_point = len(d)
                 data = d[:zero_point]
             else:

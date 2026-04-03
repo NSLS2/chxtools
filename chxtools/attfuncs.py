@@ -10,7 +10,7 @@ by LW 12/08/2015
 import numpy as np
 from . import xfuncs as xf
 
-from epics import *
+from epics import caget, caput
 
 ##PVs
 # XF:11IDB-BI{Attn:03}Cmd:In-Cmd
@@ -111,14 +111,14 @@ def calc_T(T, E="auto", foil_mode="Si"):
     sT = np.zeros(len(abs_th))
     for m in range(0, len(abs_th)):
         sT[m] = xf.get_T(abs_mat[m], E / 1000, abs_th[m])
-    for l in range(0, 2 ** len(abs_th)):
-        k = f.format(l)
+    for num in range(0, 2 ** len(abs_th)):
+        k = f.format(num)
         a = np.zeros(len(abs_th))
         for h in range(0, len(abs_th)):
             a[h] = int(k[h])
         x = sT * a
         x[x == 0] = 1
-        T_tot[l] = np.product(x)
+        T_tot[num] = np.product(x)
 
     # determine best attenuator configuration
     diff = np.abs(T_tot - T)
