@@ -1,7 +1,7 @@
 % data from measurements 01/16/17
 % manually taken for center of undulator cone
-% K colkumn is a placeholder! 
-% ID gap [mm]     K      E_1 [keV] 
+% K colkumn is a placeholder!
+% ID gap [mm]     K      E_1 [keV]
 5.20    1.0 1.3782
 5.40    1.0 1.4504
 5.60    1.0 1.525

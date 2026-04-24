@@ -1,6 +1,7 @@
 #atom
 #cython
 databroker
+eiger-io
 #enaml
 #fabio
 #h5py
@@ -14,4 +15,3 @@ pymongo
 scikit-beam
 scikit-image
 scipy
-eiger-io

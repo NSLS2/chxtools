@@ -59,4 +59,3 @@ enamldef MainView(MainWindow): main_view:
                     MPLCanvas:
                         figure << model._fig
                         toolbar_visible = True
-

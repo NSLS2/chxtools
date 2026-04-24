@@ -1,0 +1,44 @@
+[workspace]
+channels = ["conda-forge"]
+name = "chxtools"
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+version = "2026.3.0"
+
+[feature.base.dependencies]
+numpy = "*"
+pyepics = "*"
+python = ">=3.12,<3.13"
+databroker = "==2.0.0b68"
+eiger-io = "*"
+matplotlib = "*"
+pymongo = "*"
+scikit-beam = "*"
+scikit-image = "*"
+scipy = "*"
+
+[feature.terminal.dependencies]
+ipython = ">=9.5.0"
+pyside6 = "*"
+numpy = ">2"
+
+[feature.dev.dependencies]
+pre-commit = "*"
+ruff = "*"
+black = "*"
+isort = "*"
+prettier = "*"
+nbstripout = "*"
+
+[feature.dev.tasks]
+pre-commit-install = "pre-commit install"
+pre-commit-run = "pre-commit run --all-files"
+pre-commit-update = "pre-commit autoupdate"
+lint = "ruff check ."
+format = "ruff format ."
+lint-fix = "ruff check --fix ."
+black-format = "black ."
+isort-fix = "isort ."
+
+[environments]
+terminal = {features=["base", "terminal"], solve-group="profile"}
+dev = {features=["dev"], no-default-feature = true}

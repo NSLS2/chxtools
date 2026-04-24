@@ -1,6 +1,5 @@
-from atom.api import *
+from atom.api import observe, Atom, Str, Typed, Dict, Bool, Float
 from matplotlib.figure import Figure
-from matplotlib.axes import Axes
 import numpy as np
 import datetime
 import os
@@ -35,20 +34,21 @@ class Model(Atom):
             self.dt0 = datetime.datetime.utcnow()
             self._fig = Figure(figsize=(1, 1))
             self._fig.set_tight_layout(True)
-            pvs = ['pv1', 'pv2', 'pv3', 'pv4']
+            pvs = ["pv1", "pv2", "pv3", "pv4"]
 
-            for idx, (name, position) in enumerate(zip(pvs,
-                                                       range(1, len(pvs)+1))):
+            for idx, (name, position) in enumerate(zip(pvs, range(1, len(pvs) + 1))):
                 if idx == 0:
                     sharex = None
                 else:
                     sharex = self._axes[pvs[0]]
                 self._axes[name] = self._fig.add_subplot(
-                    len(pvs)+1, 1, position, sharex=sharex)
-            self._axes['data'] = self._fig.add_subplot(
-                len(pvs)+1, 1, len(pvs)+1, sharex=self._axes[pvs[0]])
+                    len(pvs) + 1, 1, position, sharex=sharex
+                )
+            self._axes["data"] = self._fig.add_subplot(
+                len(pvs) + 1, 1, len(pvs) + 1, sharex=self._axes[pvs[0]]
+            )
 
-    @observe('data_file')
+    @observe("data_file")
     def datafiles_changed(self, changed):
         # load your data
 
@@ -56,21 +56,21 @@ class Model(Atom):
         x = np.linspace(self.t0, self.t1, 1000)
         y = np.cos(x) * 10
         y += np.random.randn(len(x))
-        self._axes['data'].cla()
-        self._axes['data'].plot(x, y, label=self.data_file.split(os.sep)[-1])
-        self._axes['data'].legend(loc=0)
+        self._axes["data"].cla()
+        self._axes["data"].plot(x, y, label=self.data_file.split(os.sep)[-1])
+        self._axes["data"].legend(loc=0)
         self.reformat_view()
 
-    @observe('dt0')
+    @observe("dt0")
     def dt0_changed(self, changed):
         print(changed)
 
-    @observe('pv1', 'pv2', 'pv3', 'pv4')
+    @observe("pv1", "pv2", "pv3", "pv4")
     def get_pv1(self, changed):
         print(changed)
         # get the data from the channel archiver
-        pv_name = changed['value']
-        axes = self._axes[changed['name']]
+        pv_name = changed["value"]
+        axes = self._axes[changed["name"]]
         axes.set_ylabel(pv_name)
         self._update_data(pv_name, axes)
 
@@ -82,10 +82,10 @@ class Model(Atom):
         axes.legend(loc=0)
         self.reformat_view()
 
-    @observe('t0', 't1')
+    @observe("t0", "t1")
     def change_time(self, changed):
         for k, axes in self._axes.items():
-            if k == 'data':
+            if k == "data":
                 continue
             pv_name = getattr(self, k)
             self._update_data(pv_name, axes)
