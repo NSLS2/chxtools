@@ -12,19 +12,20 @@ version 0.2.0: fixed some problems with arrays as inputs, e.g. in get_gap
                and changed the help files to use the standard python 'help' and docstring functions;
                added xfuncs_exception class for handling xfuncs specific exceptions within python (03/23/2015)
                added get_pinflux: calculates photon flux from photo current from pin diode
-version 0.2.1: (this file) changed ID selection for gap function to 'default_id'
+version 0.2.1: changed ID selection for gap function to 'default_id'
+version 3.0.3: use importlib.resources instead of pkg_resources
 """
 
 import pylab as pl
 import numpy as np
 import re
 
-from pkg_resources import resource_filename as rs_fn
+from importlib.resources import files
 from pathlib import Path
 
 # path to X-ray data files
 # This is a Path object:
-datapath = Path(rs_fn("chxtools", "X-ray_database"))
+datapath = files("chxtools") / "X-ray_database"
 xdatafiles = [
     str(f.relative_to(datapath))
     for f in datapath.glob("*")

@@ -3,12 +3,14 @@
 Created on Wed Mar 25 14:02:59 2015
 by LW March 2015
 set of utility functions for beamline alignment and commissioning
-v 0.0.1 (this version): might have created a typo in E-calibration!!!
+v 0.0.1: might have created a typo in E-calibration!!!
                         added dcm_roll for calculating DCM Roll correction
+v 3.0.3: using importlib.resources instead of pkg_tools
+                    
 """
 
 from pathlib import Path
-from pkg_resources import resource_filename as rs_fn
+from importlib.resources import files
 from numpy import mean
 
 
@@ -1715,7 +1717,7 @@ def get_ID_calibration(
         + str(time.strftime("%Y"))
         + ".dat"
     )
-    dat_file = Path(rs_fn("chxtools", "X-ray_database")) / Path(fn)
+    dat_file = files("chxtools") / "X-ray_database" / fn
     try:
         with dat_file.open("w") as outFile:
             outFile.write("% data from measurements {}\n".format(time.strftime("%D")))
