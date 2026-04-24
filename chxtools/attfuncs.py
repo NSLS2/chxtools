@@ -118,7 +118,7 @@ def calc_T(T, E="auto", foil_mode="Si"):
             a[h] = int(k[h])
         x = sT * a
         x[x == 0] = 1
-        T_tot[num] = np.product(x)
+        T_tot[num] = np.prod(x)
 
     # determine best attenuator configuration
     diff = np.abs(T_tot - T)
@@ -241,7 +241,7 @@ def get_T(E="auto"):
         sT[m] = xf.get_T(abs_mat[m], E / 1000.0, abs_th[m])
     x = sT * read_conf
     x[x == 0] = 1
-    T_tot = np.product(x)
+    T_tot = np.prod(x)
     Si_ind = read_conf[len(Cu_th) : len(read_conf)]
     Cu_ind = read_conf[0 : len(Cu_th)]
     print("Found:")
