@@ -374,7 +374,7 @@ def get_Bragg(reflection, E=8.0):
         reflection, str
     ):  # and all(isinstance(E, (int, long, float, complex)) for item in [E,E]): # <- bug in python: check for E is numeric works in standalone function, but not in this package => don't check
         E = np.array(E)
-        lam = xf.get_Lambda(E, "A")
+        lam = get_Lambda(E, "A")
         if reflection in reflstr:
             ind = reflstr.index(reflection)
             print(
