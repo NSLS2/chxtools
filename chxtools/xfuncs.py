@@ -287,8 +287,9 @@ def get_Bragg(reflection, E=8.0):
     function return the Bragg angle [deg.] of a given material and reflection at a given Energy.
     Calling sequence: thetaB=get_Bragg(reflection,E),  thetaB(1)=Bragg angle[deg.] thetaB(2)=dhkl [A], thetaB(3)=I/Io [%].
     E: x-ray energy in keV (can be an array of energies),
-    reflection: string, e.g. 'Si111'. Reflections implemented from http://database.iem.ac.ru/mincryst, T=25C or calculated from XOP, e.g for Si111&Si220 @80K
-    type get_Bragg(\'reflections?\') for a list of currently available materials;
+    reflection: string, e.g. 'Si111'. Reflections implemented from http://database.iem.ac.ru/mincryst, T=25C or calculated from XOP, e.g for Si111&Si220 @80Kget_Bragg(\'reflections?\') for a list of currently available materials;
+
+    Updated 2026-2 by AB / JCG to fix numpy depreciation issue.
     """
     reflstr = [
         "Si111cryo",
@@ -315,6 +316,7 @@ def get_Bragg(reflection, E=8.0):
         "C111",
         "C220",
     ]
+
     dspace = np.array(
         [
             3.13379852,
@@ -367,11 +369,12 @@ def get_Bragg(reflection, E=8.0):
             39.00,
         ]
     )
+
     if isinstance(
         reflection, str
     ):  # and all(isinstance(E, (int, long, float, complex)) for item in [E,E]): # <- bug in python: check for E is numeric works in standalone function, but not in this package => don't check
         E = np.array(E)
-        lam = get_Lambda(E, "A")
+        lam = xf.get_Lambda(E, "A")
         if reflection in reflstr:
             ind = reflstr.index(reflection)
             print(
@@ -387,7 +390,7 @@ def get_Bragg(reflection, E=8.0):
             for _ in range(0, np.size(theta)):
                 ds.append(dspace[ind])
                 I_list.append(Irel[ind])
-            res = np.array([np.array([theta]), np.array(ds), np.array(I_list)])[0]
+            res = list([np.array([theta]), np.array(ds), np.array(I_list)])[0]
             return res.T
         elif reflection == "reflections?":
             print("List of available reflections (T=25C):")
@@ -400,6 +403,7 @@ def get_Bragg(reflection, E=8.0):
         print(
             "error: reflection has to be a string and E needs to be numeric. Type get_Bragg? for help"
         )
+
 
 
 def get_EBragg(reflection, theta_Bragg=12.0, d_spacing=None):

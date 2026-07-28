@@ -90,3 +90,5 @@ __enamlcache__/
 
 # PyBuilder
 target/
+
+*.ipynb*
