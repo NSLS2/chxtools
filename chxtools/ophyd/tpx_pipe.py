@@ -8,18 +8,12 @@ from pathlib import Path
 from bisect import insort
 from bluesky.protocols import Flyable
 
-from .area_detectors.utils import str_to_wav, _asset_undefined_error
+from .area_detectors.utils import str_to_wav
 
 class TPX3Pipe(Device):
     sid = Component(EpicsSignal,"sid")
     scan = Component(EpicsSignal,"scan")
-    path = Component(
-        EpicsPathSignal,
-        "path",
-        string=True,
-        kind="config",
-        path_semantics="posix",
-    )
+    path = Component(EpicsSignal,"path")
     active = Component(EpicsSignal,"active")
     fire = Component(EpicsSignal,"fire")
     file_stream = Component(EpicsSignalRO,"file",string=True)
@@ -38,9 +32,11 @@ class TPX3Pipe(Device):
         self._fileset = set()
         self._files = []
         self.sid.put(-1)
-        self.path.set(self.assets_path()+"timepix_pipeline/")
+        self.path.set(str_to_wav(self.assets_path()+"timepix_pipeline/")).wait()
 
         def file_monitor(obj,value=None,old_value=None,**kwargs):
+            if not value:
+                return
             print(value)
             if value not in self._fileset:
                 insort(self._files,value,
@@ -58,9 +54,9 @@ class TPX3Pipe(Device):
         self._fileset = set()
         self._files = []
         self.files.put(self._files)
+        self.fire.put(True)
         if det := self._detector:
             det_stat = det.trigger()
-        self.fire.put(True)
         status = SubscriptionStatus(self.fire,self.await_revert,run=False)
         return status
     

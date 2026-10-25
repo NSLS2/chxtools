@@ -85,7 +85,7 @@ class Tpx3Files(Device):
         # because we need to flush setting to actual server from IOC
         self.raw_write_enable.set(1).wait()
         if self.streaming:
-            self.raw_filepath2.set(str_to_wav("tcp:/localhost:8088")).wait()
+            self.raw_filepath2.set(str_to_wav("tcp://connect@localhost:8088")).wait()
             self.raw_write_enable2.set(1).wait()
         self.set_settings.set(1).wait()
         self.set_settings.set(1).wait()
@@ -186,7 +186,7 @@ class TimePixDetector(SingleTriggerV33, AreaDetector):
         return self.files.streaming
 
     @streaming.setter
-    def stream_set(self,active:bool):
+    def streaming(self,active:bool):
         self.files.streaming = active
 
     def trigger(self):
