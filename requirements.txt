@@ -1,9 +1,0 @@
-databroker
-eiger-io
-matplotlib
-numpy
-pyepics
-pymongo
-scikit-beam
-scikit-image
-scipy
