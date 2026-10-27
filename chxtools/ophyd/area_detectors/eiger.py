@@ -1,9 +1,9 @@
 import time as ttime  # tea time
 from collections import OrderedDict
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import PurePath
 from types import SimpleNamespace
-from typing import Callable
 
 from nslsii.ad33 import StatsPluginV33
 from ophyd import (
@@ -341,3 +341,74 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
 
         return st
 
+def set_eiger_defaults(eiger):
+    """Choose which attributes to read per-step (read_attrs) or
+    per-run (configuration attrs)."""
+
+    eiger.file.read_attrs = []
+    eiger.read_attrs = ['file', 'stats1', 'stats2',
+                        'stats3', 'stats4', 'stats5']
+    for stats in [eiger.stats1, eiger.stats2, eiger.stats3,
+                  eiger.stats4, eiger.stats5]:
+        stats.read_attrs = ['total']
+    eiger.configuration_attrs = ['beam_center_x', 'beam_center_y',
+                                 'wavelength', 'det_distance', 'cam',
+                                 'threshold_energy', 'photon_energy']
+    eiger.cam.read_attrs = []
+    eiger.cam.configuration_attrs = ['acquire_time', 'acquire_period',
+
+                                     'num_images']
+def no_plugins(det, *, skip_list=('file',)):
+    """Disable all AD plugins we know about.
+
+    This is a helper to disable all of the plugins on an area detector.
+    The defaults are tune for eiger*m_single
+
+    Parameters
+    ----------
+    det : AreaDetectorBase
+        The device to opreate on
+
+    skip_list : tuple[str], default=('file',)
+        Any plugins to leave in their current state.
+    """
+    for p in det.component_names:
+        if p in skip_list:
+            continue
+        plugin = getattr(det, p)
+        if hasattr(plugin, 'disable_on_stage'):
+            plugin.disable_on_stage()
+
+def all_plugins(det, *, skip_list=()):
+    """Enable all AD plugins we know about.
+
+    This is a helper to enable all of the plugins on an area detector.
+
+    Parameters
+    ----------
+    det : AreaDetectorBase
+        The device to opreate on
+
+    skip_list : tuple[str], default=()
+        Any plugins to leave in their current state.
+    """
+    for p in det.component_names:
+        if p in skip_list:
+            continue
+        plugin = getattr(det, p)
+        if hasattr(plugin, 'enable_on_stage'):
+            plugin.enable_on_stage()
+
+
+def enable_plugins(det, plugin_names):
+    """Selectively enable plugins on an AreaDetector
+
+    Parameters
+    ----------
+    det : AreaDetectorBase
+        The device to configure
+    plugin_names : List[str]
+        The plugins to enable
+    """
+    for p in plugin_names:
+        getattr(det, p).enable_on_stage()
