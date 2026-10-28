@@ -58,6 +58,7 @@ Changelog = "https://github.com/NSLS2/releases"
 [dependency-groups]
 dev = [
   "import-linter",
+  "isort",
   "mdformat",
   "mdformat-frontmatter",
   "mdformat-ruff",
@@ -97,7 +98,6 @@ pre-commit-update = "pre-commit autoupdate"
 lint = "ruff check ."
 format = "ruff format ."
 lint-fix = "ruff check --fix ."
-black-format = "black ."
 isort-fix = "isort ."
 
 [tool.pixi.environments]
