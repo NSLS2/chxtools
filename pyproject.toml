@@ -14,6 +14,7 @@ maintainers = [
     {name = 'Rhys Takahashi', email = 'mtakahash1@bnl.gov'},
 ]
 description = "Comprehensive toolkit for Coherent Hard Xray beamline"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = "BSD-3-Clause"
 requires-python = ">=3.11,<3.14"
 classifiers = [
