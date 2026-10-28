@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import ClassVar, TypedDict
 
-from area_detectors.eiger import EigerFastTrigger
-from area_detectors.timepix import TimePixDetector
-from beam_monitors import Elm, XBPM, XBpm, XBpmFeedbackEnable
+from .area_detectors.eiger import EigerFastTrigger
+from .area_detectors.timepix import TimePixDetector
+from .beam_monitors import Elm, XBPM, XBpm, XBpmFeedbackEnable
 from ophyd import Device
 
 
