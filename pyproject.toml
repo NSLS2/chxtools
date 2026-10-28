@@ -1,0 +1,211 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = 'chxtools'
+authors = [
+    {name = "Andrei Fluerasu"},
+    {name = "Yugang Zhang"},
+    {name = "Eric Dill"},
+]
+maintainers = [
+    {name="Justin Goodrich"},
+    {name = 'Rhys Takahashi', email = 'mtakahash1@bnl.gov'},
+]
+description = "Comprehensive toolkit for Coherent Hard Xray beamline"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "BSD-3-Clause"
+requires-python = ">=3.11,<3.14"
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Typing :: Typed",
+]
+dynamic = ["version"]
+dependencies = [
+  "bluesky",
+  "tiled[client]",
+  "bluesky-tiled-plugins",
+  "ophyd-async[ca, pva, sim]",
+  "nslsii",
+  "numpy",
+  "pyepics",
+  "databroker",
+  "matplotlib",
+  "pymongo",
+  "scikit-beam",
+  "scikit-image",
+  "scipy",
+]
+
+[project.optional-dependencies]
+terminal = ["ipython"]
+eiger-io = ["eiger-io@git+https://github.com/NSLS-II/eiger-io.git"]
+
+[project.urls]
+Homepage = "https://github.com/NSLS2/chxtools"
+Issues = "https://github.com/NSLS2/chxtools/issues"
+Changelog = "https://github.com/NSLS2/releases"
+
+[dependency-groups]
+dev = [
+  "import-linter",
+  "isort",
+  "mdformat",
+  "mdformat-frontmatter",
+  "mdformat-ruff",
+  "nbstripout",
+  "pre-commit",
+  "pre-commit-hooks",
+  "pyright",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "pytest-timeout",
+  "ruff",
+  "tiled[client,server]",
+]
+docs = [
+  "pydata-sphinx-theme>=0.12",
+  "myst-parser",
+  "sphinx-autobuild",
+  "sphinx-autodoc2",
+  "sphinxcontrib-mermaid",
+  "sphinx-copybutton",
+  "sphinx-design",
+]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+[tool.pixi.dependencies]
+hatch = ">=1.7.0"
+
+[tool.pixi.pypi-dependencies]
+chxtools = { path = ".", editable = true }
+
+
+[tool.pixi.feature.dev.tasks]
+pre-commit-install = "pre-commit install"
+pre-commit-run = "pre-commit run --all-files"
+pre-commit-update = "pre-commit autoupdate"
+lint = "ruff check ."
+format = "ruff format ."
+lint-fix = "ruff check --fix ."
+isort-fix = "isort ."
+
+[tool.pixi.environments]
+default = { features = ["terminal", "dev","eiger-io"] }
+docs = { features = ["terminal", "dev","eiger-io","docs"] }
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build]
+artifacts = ["src/chxtools/_version.py"]
+
+[tool.hatch.version.raw-options]
+fallback_version = "0.0.0"
+local_scheme = "no-local-version"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/chxtools/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chxtools"]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+# Run pytest with all our checkers, and don't spam us with massive tracebacks on error
+addopts = """
+    --tb=native -vv --strict-markers --doctest-modules
+    --doctest-glob="*.rst" --doctest-glob="*.md"
+    --ignore=docs/examples --ignore=docs/_scripts --ignore=src/chxtools/profiles
+    """
+# https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
+filterwarnings = [
+    "error",
+    "ignore:tagMap is deprecated:DeprecationWarning:ldap3",
+    "ignore:typeMap is deprecated:DeprecationWarning:ldap3",
+]
+# Doctest python code in docs, python code in src docstrings, test functions in tests
+testpaths = "docs src tests"
+log_format = "%(asctime)s,%(msecs)03d %(levelname)s (%(threadName)s) %(message)s"
+log_date_format = "%H:%M:%S"
+
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+timeout = 60
+
+[tool.coverage.run]
+patch = ["subprocess"]
+# branch = true
+
+[tool.coverage.paths]
+# Tests are run from installed location, map back to the src directory
+source = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+lint.select = [
+  "B",       # flake8-bugbear
+  "C4",      # flake8-comprehensions
+  "D",       # pydocstyle
+  "E",       # pycodestyle errors
+  "F",       # Pyflakes
+  "I",       # isort
+  "LOG015",  # root logger calls
+  "N",       # pep8-naming
+  "PLC2701", # private imports
+  "S101",    # assert
+  "SLF",     # private member access
+  "UP",      # pyupgrade
+  "W",       # pycodestyle warnings
+]
+lint.ignore = [
+  "B901", # Return in a generator is needed for plans
+  "D102", # Inherited abstract methods do not need duplicate docstrings.
+  "D107", # Class docstrings document initialization.
+]
+lint.preview = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["chxtools"]
+
+[tool.ruff.lint.per-file-ignores]
+# By default, private member access is allowed in tests
+"tests/**/*" = ["D", "S101", "SLF001"]
+# Profiles import names for use in the interactive session
+"src/chxtools/profiles/**/*" = ["F401"]
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+# We often shorten "Annotated" to "A" for brevity
+# in ophyd-async declarative style devices
+"typing.Annotated" = "A"
+
+[tool.ruff.lint.pep8-naming]
+# The fixture RE is commonly used in tests
+extend-ignore-names = ["RE"]
+
+[tool.importlinter]
+root_package = "chxtools"
