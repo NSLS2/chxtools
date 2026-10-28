@@ -306,7 +306,7 @@ class EigerManualTrigger(SingleTrigger, EigerBase):
     def unstage(self):
         self.file.frame_num = 0
         super().unstage()
-        ttime.time.sleep(.1)
+        ttime.sleep(.1)
         self.cam.acquire.put(0)
 
 

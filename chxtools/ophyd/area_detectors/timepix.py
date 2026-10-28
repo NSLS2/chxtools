@@ -1,7 +1,7 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Annotated as A
-from typing import Sequence, get_args, get_type_hints
+from typing import get_args, get_type_hints
 
 import bluesky.plan_stubs as bps
 import numpy as np
@@ -21,7 +21,6 @@ from ophyd.areadetector.plugins import (
 from ophyd.signal import EpicsSignal, Signal
 from ophyd_async.core import (
     AsyncStatus,
-    Device,
     PathProvider,
     SignalR,
     SignalRW,
@@ -30,8 +29,8 @@ from ophyd_async.core import (
     StandardReadable,
     StrictEnum,
     UUIDFilenameProvider,
-    init_devices,
 )
+from ophyd_async.core import Device as AsyncDevice
 from ophyd_async.core import (
     StandardReadableFormat as Format,
 )
@@ -246,7 +245,7 @@ class TimePixDetector(SingleTriggerV33, AreaDetector):
 
 
 
-def gather_config_signals(device: Device) -> Sequence[SignalR]:
+def gather_config_signals(device: AsyncDevice) -> Sequence[SignalR]:
     config_signals: list[SignalR] = []
     annotations = get_type_hints(type(device), include_extras=True)
 

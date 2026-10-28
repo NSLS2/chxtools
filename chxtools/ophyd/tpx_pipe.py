@@ -73,6 +73,6 @@ class TPX3Pipe(Device):
 
     def unstage(self):
         if det := self._detector:
+            det.unstage()
             det.streaming = False
-            det.stage()
         self.file_stream.unsubscribe(self.sub_id)

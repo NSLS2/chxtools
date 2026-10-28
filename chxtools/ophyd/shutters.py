@@ -21,8 +21,10 @@ class FourPVShutter(Device):
 
     @property
     def is_open(self):
-        self._check_sanity()
-        return self.open_status.get()
+        # self._check_sanity() Migration fix due to logical mismatch
+        return bool(self.open_status.get())
+
+    status = is_open
 
     def _check_sanity(self):
         consistency = self.open_status.get() ^ self.close_status.get()

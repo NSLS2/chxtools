@@ -44,6 +44,11 @@ class Peltier_Cooler(Device):
         self.set_chiller_temperature.put(T)
         print(f'Chiller temperature set to: {T} [C]')
 
+def _yes_no(bool):
+    return "yes" if bool else "no"
+
+def _on_off(bool):
+    return "on" if bool else "off"
 
 class LinkamThermal(Device):
     # Set-and-read signals
@@ -132,34 +137,19 @@ class LinkamThermal(Device):
         return self.arr2word(self.hard_ver.get())
 
     def status(self):
-        text = f"\nCurrent temperature = {self.temperature():.1f}, setpoint = {self.temperature_setpoint.get():.1f}\n\n"
         code = int(self.status_code.get())
-
-        if code & 1:  # Error
-            text += "Error        : yes" + "\n"
-        else:
-            text += "Error        : no\n"
-        if code & 2:  # at setpoint
-            text += "At setpoint  : yes" + "\n"
-        else:
-            text += "At setpoint  : no\n"
-        if code & 4:  # heater
-            text += "Heater       : on" + "\n"
-        else:
-            text += "Heater       : off\n"
-        if code & 8:  # pump
-            text += "Pump         : on" + "\n"
-        else:
-            text += "Pump         : off\n"
-        if code & 16:  # pump auto
-            text += "Pump Auto    : yes" + "\n"
-        else:
-            text += "Pump Auto    : no\n"
-
-        print(text)
+        print("\n"
+            f"Current temperature = {self.temperature():.1f}, setpoint = {self.temperature_setpoint.get():.1f}\n"
+            f"Error\t\t:{_yes_no(code&1)}\n"
+            f"At setpoint\t:{_yes_no(code&2)}\n"
+            f"Heater\t\t:{_on_off(code&4)}\n"
+            f"pump\t\t:{_on_off(code&8)}\n"
+            f"pump Auto\t:{_on_off(code&16)}\n"
+        )
 
 
 class LinkamTensile(LinkamThermal):
+    #TODO: restore _mov, _setDirection, _start, _stop in package due to yielding from bluesky plans
     # cmd = Cpt(EpicsSignal, 'STARTHEAT')
     # temperature_setpoint = Cpt(EpicsSignal, 'SETPOINT:SET')
     # temperature_rate_setpoint = Cpt(EpicsSignal, 'RAMPRATE:SET')
@@ -185,6 +175,7 @@ class LinkamTensile(LinkamThermal):
     force = Cpt(EpicsSignal, "TST_FORCE_SETPOINT")
     distance = Cpt(EpicsSignal, "TST_MTR_DIST_SP")  # relative distance
     mode = Cpt(EpicsSignalRO, "TST_TABLE_MODE")
+    modes= ("velocity","step","cycle","force","relax","stop")
     velocity = Cpt(EpicsSignal, "TST_MTR_VEL")
 
     # Set-and-read signals
@@ -201,40 +192,18 @@ class LinkamTensile(LinkamThermal):
     J2J_distance_setpoint = Cpt(EpicsSignal, "TST_JAW_TO_JAW_SIZE:SET")
 
     def statusTensile(self, verbosity=3):
-        text = f"\nCurrent temperature = {self.temperature():.1f}, setpoint = {self.temperature_setpoint.get():.1f}\n\n"
-
-        # mode_value = self.
-        text += f"\nCurrent mode = {self.getMode(verbosity=5):}\n\n"
         code = int(self.status_code_Tensile.get())
-
-        if code & 1:  # Zero Limit
-            text += "Zero Limit        : yes" + "\n"
-        else:
-            text += "Zero Limit        : no\n"
-        if code & 2:  # ref Limit
-            text += "ref Limit         : yes" + "\n"
-        else:
-            text += "ref Limit         : no\n"
-        if code & 4:  # Move Done
-            text += "Move Done         : on" + "\n"
-        else:
-            text += "Move Done         : off\n"
-        if code & 8:  # Direction
-            text += "Direction         : on" + "\n"
-        else:
-            text += "Direction         : off\n"
-        if code & 16:  # Force
-            text += "Force             : yes" + "\n"
-        else:
-            text += "Force             : no\n"
-        if code & 32:  # Cycle mode
-            text += "Cycle mode        : yes" + "\n"
-        else:
-            text += "Cycle mode        : no\n"
-        if code & 64:  # Cycle dir open
-            text += "Cycle dir open    : yes" + "\n"
-        else:
-            text += "Cycle dir open    : no\n"
+        text = ("\n"
+            f"Current temperature = {self.temperature():.1f}, setpoint = {self.temperature_setpoint.get():.1f}\n"
+            f"Current mode = {self.getMode(verbosity=5):}\n"
+            f"Zero Limit\t{_yes_no(code&1)}\n"
+            f"ref Limit\t{_yes_no(code&2)}\n"
+            f"Move Done\t{_on_off(code&4)}\n"
+            f"Direction\t{_on_off(code&8)}\n"
+            f"Force\t\t{_yes_no(code&16)}\n"
+            f"Cycle Mode\t{_yes_no(code&32)}\n"
+            f"Cycle dir Open\t{_yes_no(code&64)}\n"
+        )
 
         if verbosity >= 3:
             print(text)
@@ -252,6 +221,7 @@ class LinkamTensile(LinkamThermal):
     # def _stop(self):              # bad practice
     #     yield from bps.mv(self.run_cmd, 0)
 
+
     def setMode(self, mode):
         """
         mode = 0 : 'velocity'
@@ -261,73 +231,33 @@ class LinkamTensile(LinkamThermal):
         mode = 4 : 'relax'
         mode = 5 : 'stop'
         """
-
-        if type(mode) == str:
-            if mode == "velocity":
-                mode = 0
-            elif mode == "step":
-                mode = 1
-            elif mode == "cycle":
-                mode = 2
-            elif mode == "force":
-                mode = 3
-            elif mode == "relax":
-                mode = 4
-            elif mode == "stop":
-                mode = 5
-            else:
-                return print("Wrong mode.")
-
-        if mode == 0:
-            print("Mode:      velocity.")
-            print("Constant velocity is expected.")
-            print("Inputs are limited to velocity and distance.")
-
-        elif mode == 1:
-            print("Mode:      step.")
-            print("Distance is expected.")
-            print("Inputs are limited to velocity and distance.")
-
-        elif mode == 2:
-            print("Mode:      cycle.")
-            print("SWITCH TO setp MODE!")
-            # print('Inputs are limited to velocity and distance.')
-
-        elif mode == 3:
-            print("Mode:      force.")
-            print("Constant force is expected.")
-            print("Inputs are limited to force and distance.")
-
-        elif mode == 4:
-            print("Mode:      relax.")
-            print("Nothing is expected except time.")
-
-        elif mode == 5:
-            print("Mode:      stop.")
-
-        else:
+        try:
+            mode = mode if isinstance(mode,int) else self.modes.index(mode)
+            print(f"mode:\t\t{self.modes[mode]}")
+        except ValueError:
             return print("Wrong mode. Please choose from 0-velocity, 1-step, 3-force, 4-relax and 5-stop")
+
+        match mode:
+            case 0:
+                print("Constant velocity is expected.")
+                print("Inputs are limited to velocity and distance.")
+            case 1:
+                print("Distance is expected.")
+                print("Inputs are limited to velocity and distance.")
+            case 2:
+                print("SWITCH TO step MODE!")
+            case 3:
+                print("Constant force is expected.")
+                print("Inputs are limited to force and distance.")
+            case 4:
+                print("Nothing is expected except time.")
 
         return self.mode_setpoint.put(mode)
 
     def getMode(self, verbosity=0):
         value = self.mode_setpoint.get()
-        if value == 0:
-            mode_value = "velocity"
-        elif value == 1:
-            mode_value = "step"
-        elif value == 2:
-            mode_value = "cycle"
-        elif value == 3:
-            mode_value = "force"
-        elif value == 4:
-            mode_value = "relax"
-        elif value == 5:
-            mode_value = "stop"
-
         if verbosity >= 3:
-            return mode_value
-
+            return self.modes[value]
         return value
 
     def mov(self, position, velocity=None, verbosity=3):
@@ -396,48 +326,6 @@ class LinkamTensile(LinkamThermal):
             print(self.POS.get())
         return self.POS.get()
 
-    # def _mov(self, position, velocity=None, verbosity=3):
-    #     # move to the absolute position
-    #     # YF version
-
-    #     if position < 0:
-    #         return "Error: position < 0. "
-
-    #     # set distance
-    #     relative_pos = position - self.POS.get()
-    #     if verbosity >= 3:
-    #         print("The motor will move {:1f} mm.".format(relative_pos))
-
-    #     if relative_pos > 0:
-    #         yield from bps.mv(self.direction_setpoint, 0)
-    #         # self.setDirection(0)
-    #     elif relative_pos < 0:
-    #         yield from bps.mv(self.direction_setpoint, 1)
-    #     else:
-    #         return self.POS.get()
-
-    #     yield from bps.mv(self.distance_setpoint, abs(relative_pos))
-
-    #     # set velocity
-    #     if velocity == None and self.velocity.get() == 0:
-    #         return print("The velocity is 0. No movement.")
-    #         # self.velocity_setpoint.put(self.velocity.get())
-    #     elif velocity == None and self.velocity.get() != 0:
-    #         pass
-    #     else:
-    #         yield from bps.mv(self.velocity_setpoint, velocity)
-    #         # self.velocity_setpoint.put(velocity)
-
-    #     yield from bps.mv(self.run_cmd, 1)
-    #     # self.run_cmd.put(1)
-    #     if verbosity >= 1:
-    #         while int(LTensile.status_code_Tensile.get()) & 4:
-    #             return self.POS.get()
-
-    #     if verbosity >= 3:
-    #         print(self.POS.get())
-    #     return self.POS.get()
-
     def setDirection(self, direction, wait_time=0.1, verbosity=3):
         # 0 = Open, 1 = close
         if direction == 0 or direction == "open":
@@ -459,45 +347,24 @@ class LinkamTensile(LinkamThermal):
             print(f"Current direction : {text_direction}")
 
         return self.direction.get()
-
-    # def _setDirection(self, direction, verbosity=3):
-    #     # 0 = Open, 1 = close
-    #     if direction == 0 or direction == "open":
-    #         yield from bps.mv(self.direction_setpoint, 0)
-    #     elif direction == 1 or direction == "close":
-    #         yield from bps.mv(self.direction_setpoint, 1)
-    #     else:
-    #         print("Wrong input.")
-
-    #     if verbosity >= 3:
-    #         if self.direction.get() == 0:
-    #             text_direction = "open"
-    #         else:
-    #             text_direction = "close"
-    #         print(f"Current direction : {text_direction}")
-
-    #     return self.direction.get()
-
+    
     def states(self):
         # show the current states of the tensile stage, including
         # T, motor position and direction, force, velocity and mode
 
         # from Temperature sensor, independent from the tensile
-        text = f"\nCurrent temperature = {self.temperature():.1f}, setpoint = {self.temperature_setpoint.get():.1f}\n\n"
+        print("\n"
+            f"Current temperature = {self.temperature():.1f}, setpoint = {self.temperature_setpoint.get():.1f}\n"
 
-        # stage states, RO
-        text += f"\nSTAGE POSITION = {self.POS.get():1f}\n\n"
-        text += f"\nSTAGE FORCE  = {self.FORCE.get():1f}\n\n"
-        text += f"\nSTAGE STRAIN = {self.STRAIN.get():1f}\n\n"
-        text += f"\nSTAGE STRESS = {self.STRESS.get():1f}\n\n"
+            # stage states, RO
+            f"STAGE POSITION = {self.POS.get():1f}\n"
+            f"STAGE FORCE  = {self.FORCE.get():1f}\n"
+            f"STAGE STRAIN = {self.STRAIN.get():1f}\n"
+            f"STAGE STRESS = {self.STRESS.get():1f}\n"
 
-        # setting for the tensile part
-        text += f"\nCurrent mode = {self.getMode(verbosity=5)}\n\n"
-        text += f"\nCurrent distance = {self.distance.get():1f}, setpoint={self.distance_setposition.get():1f}\n\n"
-        text += f"\nCurrent velocity = {self.velocity.get():1f}, setpoint={self.velocity_setposition.get():1f}\n\n"
-        text += f"\nCurrent force = {self.force.get():1f}, setpoint={self.force_setposition.get():1f}\n\n"
-
-    # force = Cpt(EpicsSignal, 'TST_FORCE_SETPOINT')
-    # distance = Cpt(EpicsSignal, 'TST_MTR_DIST_SP') #relative distance
-    # mode = Cpt(EpicsSignalRO, 'TST_TABLE_MODE')
-    # velocity = Cpt(EpicsSignal, 'TST_MTR_VEL')
+            # setting for the tensile part
+            f"Current mode = {self.getMode(verbosity=5)}\n\n"
+            f"Current distance = {self.distance.get():1f}, setpoint={self.distance_setposition.get():1f}\n"
+            f"Current velocity = {self.velocity.get():1f}, setpoint={self.velocity_setposition.get():1f}\n"
+            f"Current force = {self.force.get():1f}, setpoint={self.force_setposition.get():1f}\n"
+        )
