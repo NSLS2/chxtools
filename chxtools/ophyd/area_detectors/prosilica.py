@@ -1,0 +1,92 @@
+
+from typing import Callable
+
+from nslsii.ad33 import SingleTriggerV33, StatsPluginV33
+from ophyd import Component as Cpt
+from ophyd import (
+    EpicsSignal,
+    ImagePlugin,
+    OverlayPlugin,
+    PointGreyDetector,
+    PointGreyDetectorCam,
+    ProcessPlugin,
+    ProsilicaDetector,
+    ProsilicaDetectorCam,
+    ROIPlugin,
+    TransformPlugin,
+)
+
+from chxtools.ophyd.area_detectors.plugins import (
+    TIFFPluginEnsuredOff,
+    TIFFPluginWithFileStore,
+)
+from chxtools.ophyd.area_detectors.utils import name_dir_mapping
+
+
+class _Cam(SingleTriggerV33):
+    image = Cpt(ImagePlugin, 'image1:')
+    stats1 = Cpt(StatsPluginV33, 'Stats1:')
+    stats2 = Cpt(StatsPluginV33, 'Stats2:')
+    stats3 = Cpt(StatsPluginV33, 'Stats3:')
+    stats4 = Cpt(StatsPluginV33, 'Stats4:')
+    stats5 = Cpt(StatsPluginV33, 'Stats5:')
+    trans1 = Cpt(TransformPlugin, 'Trans1:')
+    roi1 = Cpt(ROIPlugin, 'ROI1:')
+    roi2 = Cpt(ROIPlugin, 'ROI2:')
+    roi3 = Cpt(ROIPlugin, 'ROI3:')
+    roi4 = Cpt(ROIPlugin, 'ROI4:')
+    proc1 = Cpt(ProcessPlugin, 'Proc1:')
+    over1 = Cpt(OverlayPlugin, 'Over1:')
+
+    @property
+    def hints(self):
+        return {'fields': [self.stats1.total.name]}
+
+
+def Prosilica(prefix:str,*args,name:str,PointGrey=False,path_provider=None,**kwargs):
+    dcam = PointGreyDetectorCam if PointGrey else ProsilicaDetectorCam
+    family = PointGreyDetector if PointGrey else ProsilicaDetector
+
+    class v33(dcam):
+        '''This is used to update the Standard cams to AD33.
+        '''
+        wait_for_plugins = Cpt(EpicsSignal, 'WaitForPlugins',
+                            string=True, kind='config')
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.stage_sigs['wait_for_plugins'] = 'Yes'
+
+        def ensure_nonblocking(self):
+            self.stage_sigs['wait_for_plugins'] = 'Yes'
+            for c in self.parent.component_names:
+                cpt = getattr(self.parent, c)
+                if cpt is self:
+                    continue
+                if hasattr(cpt, 'ensure_nonblocking'):
+                    cpt.ensure_nonblocking()
+
+    class StandardProsilica(_Cam,family):
+        cam = Cpt(v33, 'cam1:')
+        if path_provider:
+            tiff = Cpt(TIFFPluginWithFileStore,
+                suffix='TIFF1:',
+                write_path_template='')
+        else:
+            tiff = Cpt(TIFFPluginEnsuredOff, suffix='TIFF1:')
+
+        def __init__(self, *args, **kwargs):
+            self._writing = False
+            if path_provider:
+                self.assets_path = path_provider
+                self._writing = True
+            super().__init__(*args, **kwargs)
+
+        def stage(self, *args, **kwargs):
+            if self._writing:
+                self.tiff.write_path_template = self.assets_path() + f'{name_dir_mapping[self.name]}/%Y/%m/%d/'
+                self.tiff.read_path_template = self.assets_path() + f'{name_dir_mapping[self.name]}/%Y/%m/%d/'
+                self.tiff.reg_root = self.assets_path() + f'{name_dir_mapping[self.name]}'
+            return super().stage(*args, **kwargs)
+
+    return StandardProsilica(prefix,*args,name=name,**kwargs)
