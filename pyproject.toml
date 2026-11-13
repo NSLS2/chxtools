@@ -45,11 +45,11 @@ dependencies = [
   "scikit-beam",
   "scikit-image",
   "scipy",
+  "pims"
 ]
 
 [project.optional-dependencies]
 terminal = ["ipython"]
-eiger-io = ["eiger-io@git+https://github.com/NSLS-II/eiger-io.git"]
 
 [project.urls]
 Homepage = "https://github.com/NSLS2/chxtools"
@@ -106,8 +106,8 @@ lint-fix = "ruff check --fix ."
 isort-fix = "isort ."
 
 [tool.pixi.environments]
-default = { features = ["terminal", "dev","eiger-io"] }
-docs = { features = ["terminal", "dev","eiger-io","docs"] }
+default = { features = ["terminal", "dev"] }
+docs = { features = ["terminal", "dev","docs"] }
 
 [tool.hatch.version]
 source = "vcs"
