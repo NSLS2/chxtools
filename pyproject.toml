@@ -35,6 +35,7 @@ dependencies = [
   "bluesky",
   "tiled[client]",
   "bluesky-tiled-plugins",
+  "dask",
   "ophyd-async[ca, pva, sim]",
   "nslsii",
   "numpy",
@@ -45,6 +46,7 @@ dependencies = [
   "scikit-beam",
   "scikit-image",
   "scipy",
+  "tifffile",
   "pims"
 ]
 
@@ -163,7 +165,7 @@ source = ["src"]
 
 [tool.ruff]
 target-version = "py311"
-line-length = 88
+line-length = 120
 lint.select = [
   "B",       # flake8-bugbear
   "C4",      # flake8-comprehensions
@@ -183,6 +185,7 @@ lint.ignore = [
   "B901", # Return in a generator is needed for plans
   "D102", # Inherited abstract methods do not need duplicate docstrings.
   "D107", # Class docstrings document initialization.
+  "D401", # Imperative mood docstrings are not required.
 ]
 lint.preview = true
 

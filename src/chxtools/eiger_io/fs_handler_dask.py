@@ -1,18 +1,16 @@
-import re
-import h5py
-import os
-
 import dask.array as da
-from pims import FramesSequence, Frame
-
+import h5py
+from pims import Frame, FramesSequence
 
 '''
     The logic is a little convoluted here so here is an explanation:
         - The user should use EigerHanderDask for everything they need
         - There were cases where the user used "EigerImages" with the PIMS version.
-            To make this backwards compatible, I had to move code to a separate _load_eiger_images
-            function. This is because previously the handler handed a filepath to EigerImages. Currently,
-                the handler doesn't do this (it shouldn't need to, the handler should just open the data).
+
+    To make this backwards compatible, I had to move code to a separate
+    _load_eiger_images function. This is because previously the handler handed a
+    filepath to EigerImages. Currently,the handler doesn't do this (it shouldn't need
+    to, the handler should just open the data).
 '''
 
 try:
@@ -20,7 +18,11 @@ try:
     from databroker.assets.handlers import HandlerBase
 except ImportError:
     # databroker < v0.9.0
-    from filestore.retrieve import HandlerBase
+    raise RuntimeError(
+        "legacy usage is not supported by direct package integration of eiger-io, "
+        "please use base eiger-io package"
+        ) from None
+    # from filestore.retrieve import HandlerBase
 
 # wrapper to create a class similar to EigerImages (PIMS version)
 def EigerImagesDask(master_path, _images_per_file, md={}):
@@ -29,25 +31,29 @@ def EigerImagesDask(master_path, _images_per_file, md={}):
     res, md = _load_eiger_images(master_path)
     return PIMSDask(res, md=md)
 
-class PIMSDask(FramesSequence):
-    ''' the dask version of PIMS, takes dask array.
 
-        Notes
-        -----
-            - this should eventually become a PR into PIMS.
-            - this should be upgraded to allow nested FramesSequences
-                (need to allow for defining axes etc)
-    '''
+class PIMSDask(FramesSequence):
+    """
+    the dask version of PIMS, takes dask array.
+
+    Notes
+    -----
+        - this should eventually become a PR into PIMS.
+        - this should be upgraded to allow nested FramesSequences
+            (need to allow for defining axes etc)
+    """
+
     def __init__(self, data, md=None):
-        '''
-            Initialized a lazy loader for EigerImages
-            Parameters
+        """
+        Initialize a lazy loader for EigerImages.
+
+            Parameters.
             ----------
             data : dask.array.Array
                 the data
             md : dict, optional
                 the dictionary of metadata
-        '''
+        """
         self._data = data
         self._md = md
 

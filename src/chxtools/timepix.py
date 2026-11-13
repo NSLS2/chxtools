@@ -1,4 +1,4 @@
-"""Helpful loader functions for timepix data"""
+"""Helpful loader functions for timepix data."""
 
 from pathlib import Path
 
@@ -12,7 +12,11 @@ _proposal_root_dir = Path("/nsls2/data/chx/proposals")
 
 def load_from_scan(run, processed_override="Compressed_Data"):
     """
-    this does some fuzzy search to find the processed parquet files associated with the current tiled run container
+    Does some fuzzy search to find the processed parquet files associated with the current tiled run container.
+
+    Parameters
+    ----------
+    - run: Tiled Bluesky Run Container
     """
     if "primary" not in run:
         raise ValueError("primary data stream not present")
@@ -50,7 +54,7 @@ def load_from_scan(run, processed_override="Compressed_Data"):
 def find_from_source(
     source: Path | str, base: Path | None = None, processed_loc: str = "Compressed_Data"
 ):
-    """given the source file and a lowest root directory to search in, looks for the associated processed files"""
+    """Given the source file and a lowest directory to search in, looks for the associated processed files."""
     source = Path(source)
     hash = source.stem.split("-")[0]
     if not base:
@@ -80,11 +84,11 @@ def gen_images_from_dataset(
     sparsity: int = 0,
 ):
     """
-    A function for transforming timepicx parquet files into images.
+    Transform timepix parquet files into images.
 
     Given a dataframe bins the events into images and can store them sparsely or as pure tiff.
-    a negative dt is treated as wanting a single bin histogram (may be extended to how many frames for the set to be binned into),
-    stable convention will be -1.
+    a negative dt is treated as wanting a single bin histogram (may be extended to how
+    many frames for the set to be binned into), stable convention will be -1.
 
     Parameters
     ----------
@@ -97,14 +101,15 @@ def gen_images_from_dataset(
     prefix: str
         the name of the dataset in the saved files
     sparsity: int
-        a metric for if tiff file or resectioned parquet files will be made (this is a future endeavor to load sparse from tiff)
+        a metric for if tiff file or resectioned parquet files will be made
+        (this is a future endeavor to load sparse from tiff)
     """
     if not ({"t", "xc", "yc"} <= set(dataset.columns)):
         raise ValueError("necesary columns ['t','xc','yc'] are not present")
 
     output_path = Path(output_path)
-    dataset["xi"] = dataset.xc.round().astype("int16")
-    dataset["yi"] = dataset.yc.round().astype("int16")
+    dataset["xi"] = dataset['xc'].round().astype("int16")
+    dataset["yi"] = dataset['yc'].round().astype("int16")
 
     if dt < 0:
         print("saving single histogram of full time domain")
@@ -114,7 +119,7 @@ def gen_images_from_dataset(
         return
 
     dt = dt * 1e9  # convert from secs to ns
-    nsections = (dataset.t.max() - dataset.t.min()).compute() // dt
+    nsections = (dataset['t'].max() - dataset['t'].min()).compute() // dt
     print(f"sequence is roughly {nsections} long")
     # volume = nsections*512*512
     if nsections > 5000:
@@ -129,7 +134,7 @@ def gen_images_from_dataset(
             "warning: this is a large dataset and may take some time. Consider using sparsity if not already"
         )
 
-    dataset["t_d"] = ((dataset.t - dataset.t.min()) // dt).astype("uint32")
+    dataset["t_d"] = ((dataset.t - dataset['t'].min()) // dt).astype("uint32")
     count = dataset.groupby(["t_d", "yi", "xi"]).size().rename("n").reset_index()
 
     def save_to_file(df):
