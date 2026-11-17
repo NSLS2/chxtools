@@ -5,12 +5,12 @@ from pathlib import Path
 import dask.dataframe as dd
 import numpy as np
 from scipy.sparse import coo_array as sparse
-from tifffile import imwrite
+from tifffile import imwrite  # pyright: ignore[reportMissingImports]
 
-_proposal_root_dir = Path("/nsls2/data/chx/proposals")
+_proposal_root_dir: Path = Path("/nsls2/data/chx/proposals")
 
 
-def load_from_scan(run, processed_override="Compressed_Data"):
+def load_from_scan(run, processed_override="Compressed_Data") -> list[dd.DataFrame]:
     """
     Does some fuzzy search to find the processed parquet files associated with the current tiled run container.
 
@@ -44,16 +44,12 @@ def load_from_scan(run, processed_override="Compressed_Data"):
             if not isinstance(dataset, np.ndarray):
                 dataset = dataset.compute()
             return [
-                dd.read_parquet(
-                    find_from_source(fileset[0], proposal_path, processed_override)
-                )
-                for fileset in dataset
+                dd.read_parquet(find_from_source(fileset[0], proposal_path, processed_override)) for fileset in dataset
             ]
+    return []
 
 
-def find_from_source(
-    source: Path | str, base: Path | None = None, processed_loc: str = "Compressed_Data"
-):
+def find_from_source(source: Path | str, base: Path | None = None, processed_loc: str = "Compressed_Data"):
     """Given the source file and a lowest directory to search in, looks for the associated processed files."""
     source = Path(source)
     hash = source.stem.split("-")[0]
@@ -67,9 +63,7 @@ def find_from_source(
     if not any(flist):
         flist = list(base.rglob(schema))
         if not any(flist):
-            raise FileNotFoundError(
-                "files not found in even base directory, perhaps files are routed elsewhere"
-            )
+            raise FileNotFoundError("files not found in even base directory, perhaps files are routed elsewhere")
         print(f"found files of prototype {base / schema}")
     else:
         print(f"found files of prototype {narrow / schema}")
@@ -108,8 +102,8 @@ def gen_images_from_dataset(
         raise ValueError("necesary columns ['t','xc','yc'] are not present")
 
     output_path = Path(output_path)
-    dataset["xi"] = dataset['xc'].round().astype("int16")
-    dataset["yi"] = dataset['yc'].round().astype("int16")
+    dataset["xi"] = dataset["xc"].round().astype("int16")
+    dataset["yi"] = dataset["yc"].round().astype("int16")
 
     if dt < 0:
         print("saving single histogram of full time domain")
@@ -119,22 +113,19 @@ def gen_images_from_dataset(
         return
 
     dt = dt * 1e9  # convert from secs to ns
-    nsections = (dataset['t'].max() - dataset['t'].min()).compute() // dt
+    nsections = (dataset["t"].max() - dataset["t"].min()).compute() // dt
     print(f"sequence is roughly {nsections} long")
     # volume = nsections*512*512
     if nsections > 5000:
         if (
             nsections > 10000
             and not sparsity
-            and input("this will make an image set > 20gb, proceed? (y/n)")
-            not in ("y", "yes")
+            and input("this will make an image set > 20gb, proceed? (y/n)") not in ("y", "yes")
         ):
             return
-        print(
-            "warning: this is a large dataset and may take some time. Consider using sparsity if not already"
-        )
+        print("warning: this is a large dataset and may take some time. Consider using sparsity if not already")
 
-    dataset["t_d"] = ((dataset.t - dataset['t'].min()) // dt).astype("uint32")
+    dataset["t_d"] = ((dataset.t - dataset["t"].min()) // dt).astype("uint32")
     count = dataset.groupby(["t_d", "yi", "xi"]).size().rename("n").reset_index()
 
     def save_to_file(df):
@@ -155,3 +146,44 @@ def gen_images_from_dataset(
     else:
         count.groupby(["t_d"]).apply(save_to_file).compute()
     print("done")
+
+
+def gen_images_for_run(
+    run,
+    dt: float,
+    prefix: str | None = None,
+    output_path: str | Path | None = None,
+    processed_override: str = "Compressed_Data",
+):
+    """Generate TIFF or parquet image stacks for a Bluesky run's Timepix data.
+
+    Parameters
+    ----------
+    run:
+        Tiled Bluesky run container containing the Timepix data stream.
+    dt: float
+        Width of each time bin in seconds. A negative value generates a single
+        full-duration histogram.
+    prefix: str | None, optional
+        Prefix used when writing output image files. If omitted, files are named
+        using an automatic ``autorun_*`` sequence.
+    output_path: str | Path | None, optional
+        Directory to write generated images into. Defaults to the proposal's
+        processed-data location for the current scan.
+    processed_override: str, optional
+        Subdirectory name to search for processed Timepix parquet files.
+    """
+    start = run.start
+    cycle: str = start["cycle"]
+    proposal: str = start["proposal"]["proposal_id"]
+    sid: int = start["scan_id"]
+
+    datasets = load_from_scan(run, processed_override=processed_override)
+    if output_path is None:
+        output_path = _proposal_root_dir / cycle / f"pass-{proposal!s}" / processed_override / str(sid)
+    output_path = Path(output_path)
+
+    for i, dataset in enumerate(datasets):
+        if not prefix:
+            prefix = f"autorun_{i}"
+        gen_images_from_dataset(dataset, dt, output_path=output_path, prefix=prefix)

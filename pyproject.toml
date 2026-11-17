@@ -10,8 +10,8 @@ authors = [
     {name = "Eric Dill"},
 ]
 maintainers = [
-    {name="Justin Goodrich"},
-    {name = 'Rhys Takahashi', email = 'mtakahash1@bnl.gov'},
+    {name = "Justin Goodrich"},
+    {name = "Rhys Takahashi", email = "mtakahash1@bnl.gov"},
 ]
 description = "Comprehensive toolkit for Coherent Hard Xray beamline"
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -42,12 +42,13 @@ dependencies = [
   "pyepics",
   "databroker",
   "matplotlib",
+  "pims",
+  "pydantic",
   "pymongo",
   "scikit-beam",
   "scikit-image",
   "scipy",
   "tifffile",
-  "pims"
 ]
 
 [project.optional-dependencies]
