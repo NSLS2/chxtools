@@ -1,4 +1,0 @@
-include versioneer.py
-include chxtools/_version.py
-include chxtools/X-ray_database/*.dat
-include requirements.txt
