@@ -7,59 +7,53 @@ Provides ``WorkflowManager`` for managing per-run workflow configurations across
 and workflow dependencies before attaching serialized payloads to ``md["workflows"]``.
 """
 
-from collections.abc import Callable, Iterator, Mapping, MutableMapping
-from typing import Any
+from collections.abc import Callable, Mapping
+from typing import Any, TypeAlias
 
 from pydantic import BaseModel
 
+from .projection import MDProjector
 from .workflow import Workflow
 
+WorkflowKey: TypeAlias = Workflow | type[BaseModel] | str
 
-class _WorkflowSlot(MutableMapping[Workflow | type[BaseModel] | str, Any]):
-    """Mutable mapping that normalizes keys to names and validates payloads on assignment."""
 
-    def __init__(
-        self,
-        store: dict[str, BaseModel],
-        registry: dict[str, Any],
-    ) -> None:
-        self._store = store
+class _WorkflowSlot(dict[str, BaseModel]):
+    """Multi-modal dictionary normalizing workflow/model keys to names and validating payloads."""
+
+    def __init__(self, registry: dict[str, Any]) -> None:
+        super().__init__()
         self._registry = registry
 
-    def _key(self, key: Workflow | type[BaseModel] | str) -> str:
+    def _key(self, key: WorkflowKey) -> str:
         if isinstance(key, str):
             return key
         self._registry[key.__name__] = key
         return key.__name__
 
-    def __getitem__(self, key: Workflow | type[BaseModel] | str) -> BaseModel:
-        return self._store[self._key(key)]
+    def __getitem__(self, key: WorkflowKey) -> BaseModel:
+        return super().__getitem__(self._key(key))
 
-    def __setitem__(self, key: Workflow | type[BaseModel] | str, value: Any) -> None:
+    def __setitem__(self, key: Workflow | type[BaseModel], value: Any) -> None:  # type: ignore[override]
+        if isinstance(key, str):
+            raise KeyError("for validation purposes workflow registration using bare strings is prohibited")
         name = self._key(key)
-        target = self._registry[name]
-        schema = target.schema if isinstance(target, Workflow) else target
+        schema = key.schema if isinstance(key, Workflow) else key
         match value:
             case None | False:
-                self._store.pop(name, None)
+                self.pop(name, None)
             case BaseModel():
-                self._store[name] = value
+                super().__setitem__(name, value)
             case True:
-                self._store[name] = schema()
+                super().__setitem__(name, schema())
             case _:
-                self._store[name] = schema.model_validate(value)
+                super().__setitem__(name, schema.model_validate(value))
 
-    def __delitem__(self, key: Workflow | type[BaseModel] | str) -> None:
-        del self._store[self._key(key)]
+    def __delitem__(self, key: WorkflowKey) -> None:
+        super().__delitem__(self._key(key))
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._store)
-
-    def __len__(self) -> int:
-        return len(self._store)
-
-    def __repr__(self) -> str:
-        return repr(self._store)
+    def __contains__(self, key: object) -> bool:
+        return super().__contains__(key if isinstance(key, str) else getattr(key, "__name__", key))
 
 
 class WorkflowManager:
@@ -97,36 +91,18 @@ class WorkflowManager:
 
     def __init__(
         self,
-        projector: Callable[[dict[str, Any]], Mapping[Workflow | type[BaseModel] | str, Any]] = lambda _: {},
+        projector: Callable[[Mapping[str, Any]], Mapping[str, BaseModel | None]] | None = None,
         force_input: bool = False,
     ) -> None:
-        self._once: dict[str, BaseModel] = {}
-        self._greedy: dict[str, BaseModel] = {}
-        self._strict: dict[str, BaseModel] = {}
-        self._common: dict[str, BaseModel] = {}
         self._registry: dict[str, Workflow] = {}
         self._common_registry: dict[str, type[BaseModel]] = {}
+        self.once = _WorkflowSlot(self._registry)
+        self.greedy = _WorkflowSlot(self._registry)
+        self.strict = _WorkflowSlot(self._registry)
+        self.common = _WorkflowSlot(self._common_registry)
         self.force_input = force_input
-        # projector is a special type of convenience function that takes what is passed in md
-        # and makes a default model/dataclass to put in common for better structured data
-        # returns a dict of dataclasses
-        self._projector = projector
-
-    @property
-    def once(self) -> _WorkflowSlot:
-        return _WorkflowSlot(self._once, self._registry)
-
-    @property
-    def greedy(self) -> _WorkflowSlot:
-        return _WorkflowSlot(self._greedy, self._registry)
-
-    @property
-    def strict(self) -> _WorkflowSlot:
-        return _WorkflowSlot(self._strict, self._registry)
-
-    @property
-    def common(self) -> _WorkflowSlot:
-        return _WorkflowSlot(self._common, self._common_registry)
+        # projector takes raw run md and synthesizes shared models for the common slot
+        self.projector = projector if projector is not None else MDProjector()
 
     def _prompt_model(self, model_cls: type[BaseModel]) -> BaseModel:
         return model_cls.model_validate(
@@ -139,15 +115,15 @@ class WorkflowManager:
 
     def __call__(self, md: dict[str, Any]) -> dict[str, Any]:
         workflows: dict[str, Any] = {}
-        self.common.update(self._projector(md))
-        required = self._strict | self._once
-        candidates = self._greedy | required
-        self._once.clear()
+        common = self.common | dict(self.projector(md))
+        required = self.strict | self.once
+        candidates = self.greedy | required
+        self.once.clear()
 
         for name, val in candidates.items():
             wf = self._registry[name]
             is_req = name in required
-            if missing_common := {c for c in wf.common if c.__name__ not in self._common}:
+            if missing_common := {c for c in wf.common if c.__name__ not in common}:
                 if not is_req:
                     print(f"workflow [{name}] skipped due to missing common element(s):\n",
                           *(f"\t{e.__name__ }" for e in missing_common))
@@ -158,7 +134,7 @@ class WorkflowManager:
                         "issue: missing common dataclass"
                     )
                 for cls in missing_common:
-                    self.common[cls] = self._prompt_model(cls)
+                    common[cls.__name__] = self._prompt_model(cls)
 
             workflows[name] = val.model_dump()
 
@@ -170,5 +146,5 @@ class WorkflowManager:
             for name in invalid:
                 del workflows[name]
 
-        workflows["common"] = {k: v.model_dump() for k, v in self._common.items()}
+        workflows["common"] = {k: (v.model_dump() if v else None) for k, v in common.items()}
         return md | {"workflows": workflows}
